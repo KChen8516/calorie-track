@@ -4,6 +4,54 @@
 
 
 // Storage Controller (LocalStorage)
+const StorageCtrl = (function() {
+
+    // Public API
+    return {
+        storeItem: function(item) {
+            let items;
+            if(localStorage.getItem('items') === null) {
+                items = [];
+                items.push(item);
+
+                localStorage.setItem('items', JSON.stringify(items));
+            } else {
+                items = JSON.parse(localStorage.getItem('items'));
+                items.push(item);
+                localStorage.setItem('items', JSON.stringify(items));
+            };
+        },
+        getItemsFromStorage: function() {
+            let items;
+            if(localStorage.getItem('items') === null) {
+                items = [];
+            } else {
+                items = JSON.parse(localStorage.getItem('items'));
+            }
+            return items;
+        },
+        updateStorageItem: function(updatedItem) {
+            let items = JSON.parse(localStorage.getItem('items'));
+
+            items.forEach((item, index) => {
+                if(item.id === updatedItem.id) {
+                    items.splice(index, 1, updatedItem);
+                }
+            });
+            localStorage.setItem('items', JSON.stringify(items));
+        },
+        deleteStorageItem: function(id) {
+            let items = JSON.parse(localStorage.getItem('items'));
+
+            items = items.filter(item => item.id !== id);
+            localStorage.setItem('items', JSON.stringify(items));
+        },
+        clearStorageItems: function() {
+            localStorage.removeItem('items');
+        }
+    }
+})();
+
 
 // Item Controller
 const ItemCtrl = (function() {
@@ -15,11 +63,12 @@ const ItemCtrl = (function() {
 
     // Data Structure / State
     const data = {
-        items: [
-            {id: 0, name: 'Steak Dinner', calories: 1200},
-            {id: 3, name: 'Eggs', calories: 650},
-            {id: 1, name: 'Cookie', calories: 300},
-        ],
+        // items: [
+        //     {id: 0, name: 'Steak Dinner', calories: 1200},
+        //     {id: 3, name: 'Eggs', calories: 650},
+        //     {id: 1, name: 'Cookie', calories: 300},
+        // ],
+        items: StorageCtrl.getItemsFromStorage(),
         currentItem: null,
         totalCalories: 0
     }
@@ -73,6 +122,15 @@ const ItemCtrl = (function() {
             });
 
             return found;
+        },
+        deleteItem: function(id) {
+            // update data.items with the id removed
+            data.items = data.items.filter(item => item.id !== id);
+        },
+        clearData() {
+            data.items = [];
+            data.currentItem = null;
+            data.totalCalories = 0;
         }
     }
 })();
@@ -86,6 +144,7 @@ const UICtrl = (function() {
         deleteMeal: '#btn--delete',
         updateMeal: '#btn--update',
         backBtn: '#btn--back',
+        clearBtn: '#navbar-btn--clear',
         itemForm: '#calorie-card--form',
         itemNameInput: '#item-name',
         itemCaloriesInput: '#item-calories',
@@ -144,7 +203,7 @@ const UICtrl = (function() {
             document.querySelector(UISelectors.deleteMeal).style.display = 'none';
             document.querySelector(UISelectors.updateMeal).style.display = 'none';
             document.querySelector(UISelectors.addMeal).style.display = 'block';
-            document.querySelector(UISelectors.backBtn).style.display = 'block';
+            document.querySelector(UISelectors.backBtn).style.display = 'none';
         },
         editItemInForm: function() {
             // update input fields
@@ -157,9 +216,9 @@ const UICtrl = (function() {
             document.querySelector(UISelectors.deleteMeal).style.display = 'block';
             document.querySelector(UISelectors.updateMeal).style.display = 'block';
             document.querySelector(UISelectors.addMeal).style.display = 'none';
-            document.querySelector(UISelectors.backBtn).style.display = 'none';
+            document.querySelector(UISelectors.backBtn).style.display = 'block';
         },
-        updateListItem(item) {
+        updateListItem: function(item) {
             let listItems = document.querySelectorAll('#item-list li');
 
             listItems = Array.from(listItems);
@@ -173,12 +232,22 @@ const UICtrl = (function() {
                     `;
                 }
             });
+        },
+        removeListItem: function(id) {
+            // construct the fetch id
+            const itemID = `item-${id}`;
+            document.getElementById(itemID).remove();
+        },
+        removeAllItems() {
+            const listItems = document.querySelectorAll('#item-list li');
+
+            listItems.forEach(item => item.remove());
         }
     }
 })();
 
 // App Controller
-const App = (function(ItemCtrl, UICtrl) {
+const App = (function(ItemCtrl, UICtrl, StorageCtrl) {
     const loadEventListeners = function() {
         // Grab from the UICtrl API
         const UISelectors = UICtrl.getSelectors();
@@ -191,6 +260,15 @@ const App = (function(ItemCtrl, UICtrl) {
 
         // Update Item event
         document.querySelector(UISelectors.updateMeal).addEventListener('click', itemUpdate);
+
+        // Delete Item event
+        document.querySelector(UISelectors.deleteMeal).addEventListener('click', itemDelete);
+
+        // Back Button event
+        document.querySelector(UISelectors.backBtn).addEventListener('click', UICtrl.clearEditState);
+
+        // Clear Button
+        document.querySelector(UISelectors.clearBtn).addEventListener('click', clearAllItems);
     }
 
     const itemAddSubmit = function(e) {
@@ -209,6 +287,9 @@ const App = (function(ItemCtrl, UICtrl) {
             const totalCalories = ItemCtrl.getTotalCalories();
             // Update Total Calories
             UICtrl.showTotalCalories(totalCalories);
+
+            // Update LocalStorage
+            StorageCtrl.storeItem(newItem);
 
             // Clear the inputs
             UICtrl.clearInputs();
@@ -242,10 +323,49 @@ const App = (function(ItemCtrl, UICtrl) {
 
         UICtrl.updateListItem(update);
 
+        StorageCtrl.updateStorageItem(update);
+
         UICtrl.clearEditState();
-        
+
         // Update Total Calories
         UICtrl.showTotalCalories(ItemCtrl.getTotalCalories());
+
+        e.preventDefault();
+    }
+
+    const itemDelete = function(e) {
+        // Get the current item
+        const current = ItemCtrl.getCurrentItem();
+
+        // Delete from DS
+        ItemCtrl.deleteItem(current.id);
+
+        // Delete from UI
+        UICtrl.removeListItem(current.id);
+
+        // Delete from LS
+        StorageCtrl.deleteStorageItem(current.id);
+
+        UICtrl.clearEditState();
+
+        // Update Total Calories
+        UICtrl.showTotalCalories(ItemCtrl.getTotalCalories());        
+
+        e.preventDefault();
+    }
+
+    const clearAllItems = function(e) {
+        // Delete all items from ItemCtrl.data
+        ItemCtrl.clearData();
+
+        // Remove items from the UI
+        UICtrl.removeAllItems();
+
+        // Remove items from LS
+        StorageCtrl.clearStorageItems();
+
+        // Update Total Calories
+        UICtrl.showTotalCalories(ItemCtrl.getTotalCalories()); 
 
         e.preventDefault();
     }
@@ -271,7 +391,7 @@ const App = (function(ItemCtrl, UICtrl) {
         }
     }
 
-})(ItemCtrl, UICtrl);
+})(ItemCtrl, UICtrl, StorageCtrl);
 
 // Initialize App
 App.init();
