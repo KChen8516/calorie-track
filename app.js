@@ -47,6 +47,10 @@ const ItemCtrl = (function() {
             data.items.push(newItem);
 
             return newItem;
+        },
+        getTotalCalories: function() {
+            data.totalCalories = data.items.reduce((total, item) => {return total += item.calories}, 0);
+            return data.totalCalories;
         }
     }
 })();
@@ -60,6 +64,7 @@ const UICtrl = (function() {
         itemForm: '#calorie-card--form',
         itemNameInput: '#item-name',
         itemCaloriesInput: '#item-calories',
+        totalCalories: '.total-calories'
     }
     
     // Public API
@@ -105,6 +110,9 @@ const UICtrl = (function() {
         clearInputs: function() {
             document.querySelector(UISelectors.itemCaloriesInput).value = '';
             document.querySelector(UISelectors.itemNameInput).value = '';
+        },
+        showTotalCalories: function(totalCalories) {
+            document.querySelector(UISelectors.totalCalories).textContent = totalCalories;
         }
     }
 })();
@@ -130,6 +138,12 @@ const App = (function(ItemCtrl, UICtrl) {
 
             // Update UI
             UICtrl.addListItem(newItem);
+            
+            // Get Totale Calories
+            const totalCalories = ItemCtrl.getTotalCalories();
+            // Update Total Calories
+            UICtrl.showTotalCalories(totalCalories);
+
             // Clear the inputs
             UICtrl.clearInputs();
         }
@@ -144,6 +158,11 @@ const App = (function(ItemCtrl, UICtrl) {
             const items = ItemCtrl.getItems();
 
             UICtrl.populateItemList(items);
+
+            // Get Totale Calories
+            const totalCalories = ItemCtrl.getTotalCalories();
+            // Update Total Calories
+            UICtrl.showTotalCalories(totalCalories);
 
             // Event Listeners
             loadEventListeners();
