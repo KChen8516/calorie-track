@@ -1,0 +1,51 @@
+body { margin: 0; }
+
+#navbar {
+    background-color: #2196f3;
+}
+
+.mdc-top-app-bar__section {
+    flex: 1;
+}
+
+#navbar-btn--clear {
+    color: white;
+    background-color: #90caf9;
+}
+
+.navbar-title {
+    justify-content: center;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#calorie-card {
+    padding: 20px;
+    margin-top: 20px;
+    min-width: 400px;
+}
+
+.card-title {
+    margin: 10px 0;
+}
+
+.card-buttons {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+#btn--add-meal {
+    background-color: #0d47a1;
+    color: white;
+}
+
+#btn--back {
+    background-color: #757575;
+    color: white;
+}
