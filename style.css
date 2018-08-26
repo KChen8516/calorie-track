@@ -49,3 +49,7 @@ body { margin: 0; }
     background-color: #757575;
     color: white;
 }
+
+#item-list {
+    min-width: 400px;
+}
